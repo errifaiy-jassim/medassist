@@ -1,0 +1,8 @@
+{
+  "python.analysis.extraPaths": [
+    "${workspaceFolder}/medassist-project/backend",
+    "${workspaceFolder}/medassist-project/backend/app",
+    "./backend",
+    "./backend/app"
+  ]
+}

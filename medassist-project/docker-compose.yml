@@ -1,0 +1,52 @@
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: medassist_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: medassist_user
+      POSTGRES_PASSWORD: medassist_secure_password
+      POSTGRES_DB: medassist_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U medassist_user -d medassist_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:22.0
+    container_name: medassist_keycloak
+    command: start-dev
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin_password
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: medassist_backend
+    restart: always
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg2://medassist_user:medassist_secure_password@postgres:5432/medassist_db
+      # Optional: Faster-Whisper / HuggingFace Hub token to speed model downloads and avoid rate limits
+      - HF_TOKEN=${HF_TOKEN}
+    volumes:
+      - ./backend:/app
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

@@ -1,0 +1,27 @@
+medassist-project/
+├── backend/
+│   ├── app/
+│   │   ├── api/
+│   │   │   └── v1/
+│   │   │       ├── endpoints/
+│   │   │       │   ├── auth.py
+│   │   │       │   ├── patients.py
+│   │   │       │   ├── consultations.py
+│   │   │       │   └── settings.py
+│   │   │       └── router.py
+│   │   ├── core/
+│   │   │   ├── config.py
+│   │   │   └── database.py
+│   │   ├── models/            # Modèles SQLAlchemy (PostgreSQL)
+│   │   │   ├── user.py
+│   │   │   ├── patient.py
+│   │   │   └── consultation.py
+│   │   ├── schemas/           # Validation Pydantic
+│   │   │   ├── user.py
+│   │   │   ├── patient.py
+│   │   │   └── consultation.py
+│   │   └── main.py
+│   ├── Dockerfile
+│   └── requirements.txt
+├── docker-compose.yml
+└── .env
