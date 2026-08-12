@@ -1,0 +1,174 @@
+DEBUG:root:Creating patient: full_name='Test' nir='12345' age='30' gender='F' blood_group='A+' phone='000' email='test@test.com' dossier_number='D-1'
+ERROR:root:Error creating patient
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+psycopg2.errors.UndefinedColumn: column patients.nir does not exist
+LINE 1: ...nts_id, patients.full_name AS patients_full_name, patients.n...
+                                                             ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/app/app/api/v1/endpoints/patients.py", line 21, in create_patient
+    existing = db.query(Patient).filter(Patient.nir == patient.nir).first()
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/query.py", line 2766, in first
+    return self.limit(1)._iter().first()  # type: ignore
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/query.py", line 2864, in _iter
+    result: Union[ScalarResult[_T], Result[_T]] = self.session.execute(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 2373, in execute
+    return self._execute_internal(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/session.py", line 2271, in _execute_internal
+    result: Result[Any] = compile_state_cls.orm_execute_statement(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/orm/context.py", line 306, in orm_execute_statement
+    result = conn.execute(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1421, in execute
+    return meth(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/sql/elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1643, in _execute_clauseelement
+    ret = self._execute_context(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1848, in _execute_context
+    return self._exec_single_context(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1988, in _exec_single_context
+    self._handle_dbapi_exception(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 2365, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/base.py", line 1969, in _exec_single_context
+    self.dialect.do_execute(
+  File "/usr/local/lib/python3.10/site-packages/sqlalchemy/engine/default.py", line 952, in do_execute
+    cursor.execute(statement, parameters)
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.UndefinedColumn) column patients.nir does not exist
+LINE 1: ...nts_id, patients.full_name AS patients_full_name, patients.n...
+                                                             ^
+
+[SQL: SELECT patients.id AS patients_id, patients.full_name AS patients_full_name, patients.nir AS patients_nir, patients.age AS patients_age, patients.gender AS patients_gender, patients.blood_group AS patients_blood_group, patients.phone AS patients_phone, patients.email AS patients_email, patients.dossier_number AS patients_dossier_number, patients.created_at AS patients_created_at 
+FROM patients 
+WHERE patients.nir = %(nir_1)s 
+ LIMIT %(param_1)s]
+[parameters: {'nir_1': '12345', 'param_1': 1}]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+DEBUG:root:Creating patient: full_name='jassim' nir='5' age=None gender='Féminin' blood_group='A+' phone=None email=None dossier_number=None
+DEBUG:root:Patient created: 3b396426-16aa-4b02-ac35-450f159c28a8
+DEBUG:httpcore.connection:connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x76d870e1dd50>
+DEBUG:httpcore.connection:start_tls.started ssl_context=<ssl.SSLContext object at 0x76d870dfb4c0> server_hostname='huggingface.co' timeout=None
+DEBUG:httpcore.connection:start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x76d870e1dd20>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Mon, 10 Aug 2026 16:31:12 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"a7e-mL4FfSM+dZe46mvvPHHFVd+0uX0"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a79fcd0-052f6b6e341e948e5d05d46d;d61b61d7-a3fb-4a5d-913f-fbc191fcddf0'), (b'RateLimit', b'"api";r=499;t=156'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 546c7d402795f607dedd15c21228ca4c.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'MAD56-P4'), (b'Alt-Svc', b'h3=":443"; ma=86400'), (b'X-Amz-Cf-Id', b'4oOJlXLrIETyBpJGdRBinwJmQ_QVKQ9_5EpkXIQX5BxagyPckxSKhQ==')])
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+INFO:faster_whisper:Processing audio with duration 00:06.480
+DEBUG:faster_whisper:Processing segment at 00:00.000
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.0 (-1.211428 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.2 (-1.110311 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.4 (-1.110311 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.6 (-1.110311 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.8 (-1.185668 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 1.0 (-2.039333 < -1.000000)
+DEBUG:faster_whisper:Reset prompt. prompt_reset_on_temperature threshold is met 1.000000 > 0.500000
+DEBUG:root:Creating patient: full_name='Test Patient' nir='1234567890123' age=None gender=None blood_group=None phone=None email=None dossier_number=None
+DEBUG:root:Patient created: 7f624a25-f289-4f1f-aa55-3da44480ee5d
+INFO:faster_whisper:Processing audio with duration 00:04.320
+DEBUG:faster_whisper:Processing segment at 00:00.000
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.0 (-1.234693 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.2 (-1.223355 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.4 (-1.223355 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.6 (-1.313139 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.8 (-1.511707 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 1.0 (-2.862027 < -1.000000)
+DEBUG:faster_whisper:Reset prompt. prompt_reset_on_temperature threshold is met 1.000000 > 0.500000
+INFO:faster_whisper:Processing audio with duration 00:04.980
+DEBUG:faster_whisper:Processing segment at 00:00.000
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.0 (-1.181975 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.2 (-1.193263 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.4 (-1.003569 < -1.000000)
+DEBUG:faster_whisper:Reset prompt. prompt_reset_on_temperature threshold is met 0.600000 > 0.500000
+DEBUG:root:Creating patient: full_name='imane' nir='ez' age=None gender='Féminin' blood_group='A+' phone=None email=None dossier_number=None
+DEBUG:root:Patient created: 295540cd-053d-4ee2-92cb-56d1370eb266
+DEBUG:httpcore.connection:connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=3 socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7bd09620baf0>
+DEBUG:httpcore.connection:start_tls.started ssl_context=<ssl.SSLContext object at 0x7bd0961f7640> server_hostname='huggingface.co' timeout=3
+DEBUG:httpcore.connection:start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7bd09620bac0>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 11 Aug 2026 23:57:05 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"1523-mQdmV5Bv85jNaKvO4A7GDNtqjeQ"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a7bb6d1-1370618a5e71431b0fc85f64;28780e9f-e465-419f-bc4f-8709f9d0c4c9'), (b'RateLimit', b'"api";r=499;t=191'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 5d5704a42e51cafd107137919e8b851a.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'MAD56-P4'), (b'Alt-Svc', b'h3=":443"; ma=86400'), (b'X-Amz-Cf-Id', b'hbtuk9Rgz-DONn4Y8RwJKkRkUJJJYGMr-86B3NVx6-aP5X0yY33CUA==')])
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/agent-harnesses "HTTP/1.1 200 OK"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Tue, 11 Aug 2026 23:57:05 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"a7e-zu4pvfz+JU4CcJwn4XWIL/UZQHo"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a7bb6d1-627d5b521245bd2c2130b1c1;38bfba18-39c4-4c8d-9000-328f29deda00'), (b'RateLimit', b'"api";r=498;t=191'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 5d5704a42e51cafd107137919e8b851a.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'MAD56-P4'), (b'Alt-Svc', b'h3=":443"; ma=86400'), (b'X-Amz-Cf-Id', b'6zLq9LFv6paXwF-sOwdHt0OPpOsuGI_wlPORAxZyqvaocCf4RuID4w==')])
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+INFO:faster_whisper:Processing audio with duration 00:07.980
+DEBUG:faster_whisper:Processing segment at 00:00.000
+INFO:faster_whisper:Processing audio with duration 00:03.600
+DEBUG:faster_whisper:Processing segment at 00:00.000
+DEBUG:httpcore.connection:connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x79ce6b41bac0>
+DEBUG:httpcore.connection:start_tls.started ssl_context=<ssl.SSLContext object at 0x79ce6b415fc0> server_hostname='huggingface.co' timeout=None
+DEBUG:httpcore.connection:start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x79ce6b41ba90>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Wed, 12 Aug 2026 00:00:04 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"a7e-zu4pvfz+JU4CcJwn4XWIL/UZQHo"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a7bb784-520104ad6dd18ad27f439218;37a88bcd-46bc-438d-b574-624eed392e5a'), (b'RateLimit', b'"api";r=497;t=12'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 9ebd44ea61beb5bd1506a07b26f98e4a.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'MAD56-P4'), (b'Alt-Svc', b'h3=":443"; ma=86400'), (b'X-Amz-Cf-Id', b'Hx3f1ozYBGk0YHobAQKoxb7011SfrPGjrnMu2JH0zqiZeoZ0_wpvNw==')])
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+INFO:faster_whisper:Processing audio with duration 00:02.640
+DEBUG:faster_whisper:Processing segment at 00:00.000
+INFO:faster_whisper:Processing audio with duration 00:03.360
+DEBUG:faster_whisper:Processing segment at 00:00.000
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.0 (-1.003140 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.2 (-1.011242 < -1.000000)
+DEBUG:faster_whisper:Log probability threshold is not met with temperature 0.4 (-1.005999 < -1.000000)
+DEBUG:faster_whisper:Reset prompt. prompt_reset_on_temperature threshold is met 0.600000 > 0.500000
+INFO:faster_whisper:Processing audio with duration 00:02.220
+DEBUG:faster_whisper:Processing segment at 00:00.000
+DEBUG:root:Creating patient: full_name='Test Patient' nir=None age=None gender=None blood_group=None phone=None email=None dossier_number='123'
+DEBUG:root:Patient created: 6e65a31b-8508-47eb-9a66-d4c4f3eea5ec
+DEBUG:root:Creating patient: full_name='Test Patient' nir=None age=None gender=None blood_group=None phone=None email=None dossier_number='123'
+DEBUG:root:Patient created: e3651a04-25b8-4f7a-ae0c-0221ed6d1910
+DEBUG:httpcore.connection:connect_tcp.started host='huggingface.co' port=443 local_address=None timeout=None socket_options=None
+DEBUG:httpcore.connection:connect_tcp.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7bbb1e204f10>
+DEBUG:httpcore.connection:start_tls.started ssl_context=<ssl.SSLContext object at 0x7bbb1e1fc2c0> server_hostname='huggingface.co' timeout=None
+DEBUG:httpcore.connection:start_tls.complete return_value=<httpcore._backends.sync.SyncStream object at 0x7bbb1e204ee0>
+DEBUG:httpcore.http11:send_request_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_headers.complete
+DEBUG:httpcore.http11:send_request_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:send_request_body.complete
+DEBUG:httpcore.http11:receive_response_headers.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Transfer-Encoding', b'chunked'), (b'Connection', b'keep-alive'), (b'Date', b'Wed, 12 Aug 2026 01:35:27 GMT'), (b'content-encoding', b'gzip'), (b'ETag', b'W/"a7e-zu4pvfz+JU4CcJwn4XWIL/UZQHo"'), (b'X-Powered-By', b'huggingface-moon'), (b'X-Request-Id', b'Root=1-6a7bcddf-0da2db53278e512c1b9f7bdc;6b74c868-8685-4c10-890d-e8060166ddbc'), (b'RateLimit', b'"api";r=499;t=289'), (b'RateLimit-Policy', b'"fixed window";"api";q=500;w=300'), (b'cross-origin-opener-policy', b'same-origin'), (b'Referrer-Policy', b'strict-origin-when-cross-origin'), (b'Access-Control-Max-Age', b'86400'), (b'Access-Control-Allow-Origin', b'https://huggingface.co'), (b'Vary', b'Origin'), (b'vary', b'Accept-Encoding'), (b'Access-Control-Expose-Headers', b'X-Repo-Commit,X-Request-Id,X-Error-Code,X-Error-Message,X-Total-Count,ETag,Link,Accept-Ranges,Content-Range,X-Linked-Size,X-Linked-ETag,X-Xet-Hash'), (b'X-Cache', b'Miss from cloudfront'), (b'Via', b'1.1 c95bbb2353ba80a0b30261c24e526ab4.cloudfront.net (CloudFront)'), (b'X-Amz-Cf-Pop', b'MAD56-P4'), (b'Alt-Svc', b'h3=":443"; ma=86400'), (b'X-Amz-Cf-Id', b'I6lFwisShh5TSamFWGM-JzirMcXAkHjkVEuLx5dgmJyIQUqCrI8G0g==')])
+INFO:httpx:HTTP Request: GET https://huggingface.co/api/models/Systran/faster-whisper-small/revision/main "HTTP/1.1 200 OK"
+DEBUG:httpcore.http11:receive_response_body.started request=<Request [b'GET']>
+DEBUG:httpcore.http11:receive_response_body.complete
+DEBUG:httpcore.http11:response_closed.started
+DEBUG:httpcore.http11:response_closed.complete
+INFO:faster_whisper:Processing audio with duration 00:02.640
+DEBUG:faster_whisper:Processing segment at 00:00.000

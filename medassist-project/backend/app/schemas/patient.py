@@ -2,12 +2,14 @@ from pydantic import BaseModel
 from typing import Optional
 
 class PatientBase(BaseModel):
-    national_id: str
     full_name: str
-    age: int
-    gender: str
+    nir: Optional[str] = None
+    age: Optional[str] = None
+    gender: Optional[str] = None
     blood_group: Optional[str] = None
-    known_allergies: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    dossier_number: Optional[str] = None
 
 class PatientCreate(PatientBase):
     pass

@@ -14,6 +14,7 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState("screen2");
   const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [transcription, setTranscription] = useState("");
+  const [selectedPatient, setSelectedPatient] = useState(null);
 
   const handleLogout = () => {
     setIsAuthenticated(false);
@@ -36,23 +37,31 @@ export default function App() {
       case "screen3":
         return (
           <Screen3Dictation
-            onAnalyze={(text) => {
+            patient={selectedPatient}
+            onAnalyze={(text, patient) => {
               if (text) setTranscription(text);
+              if (patient) setSelectedPatient(patient);
               setCurrentScreen("screen4");
             }}
           />
         );
       case "screen4":
-        return <Screen4Validation onTransmit={() => setCurrentScreen("screen5")} />;
+        return <Screen4Validation patient={selectedPatient} onTransmit={() => setCurrentScreen("screen5")} />;
       case "screen5":
         return (
           <Screen5Transmission
+            patient={selectedPatient}
             onNewConsultation={() => { setCurrentScreen("screen3"); }}
             onReturnHome={() => setCurrentScreen("screen2")}
           />
         );
       case "patients":
-        return <ScreenPatientDetail onNewConsultation={() => setCurrentScreen("screen3")} />;
+        return <ScreenPatientDetail onNewConsultation={(patient) => {
+          if (patient) {
+            setSelectedPatient(patient);
+          }
+          setCurrentScreen("screen3");
+        }} />;
       case "history":
         return <ScreenHistory />;
       case "settings":

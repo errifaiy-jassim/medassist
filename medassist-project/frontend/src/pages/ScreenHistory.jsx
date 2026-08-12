@@ -1,27 +1,39 @@
-import React, { useState } from "react";
-
-const transmissions = [
-  { ref: "#TX-98234-A", patient: "Amira Hadj", date: "12/05/2024", type: "Consultation complète", status: "Réussi", code: "green", docs: 4 },
-  { ref: "#TX-98112-B", patient: "Karim Benali", date: "11/05/2024", type: "Ordonnance", status: "Réussi", code: "green", docs: 1 },
-  { ref: "#TX-98045-C", patient: "Yasmine Cherif", date: "10/05/2024", type: "Demande de biologie", status: "En attente", code: "amber", docs: 2 },
-  { ref: "#TX-97988-D", patient: "Omar Mansouri", date: "09/05/2024", type: "Consultation complète", status: "Réussi", code: "green", docs: 5 },
-  { ref: "#TX-97901-E", patient: "Nadia Kaci", date: "08/05/2024", type: "Compte-rendu", status: "Échec", code: "red", docs: 1 },
-];
+import React, { useState, useEffect } from "react";
+import { fetchAllConsultations } from "../services/api";
 
 const statusStyles = {
-  green: "badge-green",
-  amber: "badge-amber",
-  red: "badge-red",
+  completed: "badge-green",
+  pending: "badge-amber",
+  failed: "badge-red",
 };
 
 export default function ScreenHistory() {
   const [filter, setFilter] = useState("all");
+  const [transmissions, setTransmissions] = useState([]);
+
+  useEffect(() => {
+    const loadData = async () => {
+      const data = await fetchAllConsultations();
+      // Transform backend data to match the expected format
+      const formatted = data.map((c) => ({
+        ref: `#${c.id.slice(0, 8).toUpperCase()}`,
+        patient: c.patient_id, // Would ideally need the name
+        date: new Date(c.created_at).toLocaleDateString("fr-FR"),
+        type: c.title || "Consultation",
+        status: c.status === "completed" ? "Réussi" : c.status === "pending" ? "En attente" : "Échec",
+        code: c.status || "completed",
+        docs: 1,
+      }));
+      setTransmissions(formatted);
+    };
+    loadData();
+  }, []);
 
   const filtered = transmissions.filter((t) => {
     if (filter === "all") return true;
-    if (filter === "success") return t.code === "green";
-    if (filter === "pending") return t.code === "amber";
-    if (filter === "failed") return t.code === "red";
+    if (filter === "success") return t.code === "completed";
+    if (filter === "pending") return t.code === "pending";
+    if (filter === "failed") return t.code === "failed";
     return true;
   });
 
@@ -70,7 +82,7 @@ export default function ScreenHistory() {
             <thead>
               <tr className="bg-[var(--bg-app)] text-left text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
                 <th className="px-6 py-4 font-semibold">Référence</th>
-                <th className="px-6 py-4 font-semibold">Patient</th>
+                <th className="px-6 py-4 font-semibold">Patient ID</th>
                 <th className="px-6 py-4 font-semibold">Date</th>
                 <th className="px-6 py-4 font-semibold">Type</th>
                 <th className="px-6 py-4 font-semibold">Documents</th>

@@ -1,8 +1,10 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.router import api_router
+from app.core.database import init_db
 
 app = FastAPI(title="MedAssist API - Consultation IA", version="1.0.0")
+init_db()
 
 app.add_middleware(
     CORSMiddleware,

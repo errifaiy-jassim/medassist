@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import auth, patients, consultations, settings, stt, coding
+from app.api.v1.endpoints import auth, patients, consultations, settings, stt, coding, transmission, pdf
 
 api_router = APIRouter()
 
@@ -9,3 +9,5 @@ api_router.include_router(consultations.router, prefix="/consultations", tags=["
 api_router.include_router(settings.router, prefix="/settings", tags=["Settings"])
 api_router.include_router(stt.router, prefix="/stt", tags=["Speech-To-Text"])
 api_router.include_router(coding.router, prefix="/coding", tags=["Coding"])
+api_router.include_router(transmission.router, prefix="/transmission", tags=["Transmission"])
+api_router.include_router(pdf.router, prefix="/pdf", tags=["PDF"])

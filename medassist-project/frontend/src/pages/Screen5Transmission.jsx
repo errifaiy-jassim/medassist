@@ -1,10 +1,56 @@
 import React from "react";
+import { jsPDF } from "jspdf";
 
 const docs = [
-  { title: "Ordonnance Médicale", sub: "Prescription thérapeutique : Metformine & Amlodipine", size: "PDF • 240 KB", icon: "rx" },
-  { title: "Compte-Rendu Clinique", sub: "Synthèse clinique structurée pour le dossier patient", size: "PDF • 180 KB", icon: "doc" },
-  { title: "Demande de Biologie", sub: "Bilan sanguin complet : Glycémie à jeun & HbA1c", size: "PDF • 120 KB", icon: "lab" },
-  { title: "Demande d'Imagerie", sub: "Échographie hépato-biliaire", size: "PDF • 140 KB", icon: "img" },
+  {
+    title: "Ordonnance Médicale",
+    sub: "Prescription thérapeutique : Metformine & Amlodipine",
+    size: "PDF • 240 KB",
+    icon: "rx",
+    content: [
+      "Ordonnance médicale",
+      "Patient : Amira Hadj",
+      "Médicament : Metformine 850 mg",
+      "Médicament : Amlodipine 5 mg",
+      "Précautions : surveiller la tension artérielle et la glycémie",
+    ],
+  },
+  {
+    title: "Compte-Rendu Clinique",
+    sub: "Synthèse clinique structurée pour le dossier patient",
+    size: "PDF • 180 KB",
+    icon: "doc",
+    content: [
+      "Compte-rendu clinique",
+      "Motif : suivi de diabète et d'hypertension",
+      "Évolution : stable, compliance correcte",
+      "Recommandations : poursuivre le traitement et contrôler l'hémoglobine glyquée",
+    ],
+  },
+  {
+    title: "Demande de Biologie",
+    sub: "Bilan sanguin complet : Glycémie à jeun & HbA1c",
+    size: "PDF • 120 KB",
+    icon: "lab",
+    content: [
+      "Demande de biologie",
+      "Examens demandés : glycémie à jeun, HbA1c, créatinine, bilan lipidique",
+      "Prélèvement : sang veineux",
+      "Résultats attendus : validation dans 24 à 48 heures",
+    ],
+  },
+  {
+    title: "Demande d'Imagerie",
+    sub: "Échographie hépato-biliaire",
+    size: "PDF • 140 KB",
+    icon: "img",
+    content: [
+      "Demande d'imagerie",
+      "Examen : échographie hépato-biliaire",
+      "Indication : douleur abdominale et suspicion de lithiase",
+      "Préparation : à jeun si nécessaire",
+    ],
+  },
 ];
 
 function DocIcon({ name }) {
@@ -17,7 +63,39 @@ function DocIcon({ name }) {
   }
 }
 
-export default function Screen5Transmission({ onNewConsultation, onReturnHome }) {
+export default function Screen5Transmission({ patient, onNewConsultation, onReturnHome }) {
+  const handlePreview = (doc) => {
+    const pdf = new jsPDF();
+    pdf.setFontSize(18);
+    pdf.text(doc.title, 14, 20);
+    pdf.setFontSize(11);
+    pdf.text(doc.sub, 14, 32);
+    pdf.setDrawColor(220, 220, 220);
+    pdf.line(14, 40, 196, 40);
+
+    doc.content.forEach((line, index) => {
+      pdf.text(line, 14, 52 + index * 8);
+    });
+
+    window.open(pdf.output("bloburl"), "_blank", "noopener,noreferrer");
+  };
+
+  const handleExport = (doc) => {
+    const pdf = new jsPDF();
+    pdf.setFontSize(18);
+    pdf.text(doc.title, 14, 20);
+    pdf.setFontSize(11);
+    pdf.text(doc.sub, 14, 32);
+    pdf.setDrawColor(220, 220, 220);
+    pdf.line(14, 40, 196, 40);
+
+    doc.content.forEach((line, index) => {
+      pdf.text(line, 14, 52 + index * 8);
+    });
+
+    pdf.save(`${doc.title.replace(/\s+/g, "_").toLowerCase()}.pdf`);
+  };
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -26,6 +104,11 @@ export default function Screen5Transmission({ onNewConsultation, onReturnHome })
         <h1 className="text-3xl lg:text-4xl font-bold">Transmission SIH Effectuée</h1>
         <div className="gold-divider mt-3" />
         <p className="mt-3 text-[var(--text-muted)] text-sm">Processus d'intégration des données médicales</p>
+        {patient && (
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-[var(--info-bg)] px-3 py-1.5 text-sm text-[var(--info)]">
+            <span className="font-semibold">Patient :</span> {patient.fullName}
+          </div>
+        )}
       </div>
 
       {/* Success */}
@@ -36,7 +119,7 @@ export default function Screen5Transmission({ onNewConsultation, onReturnHome })
         <div className="text-center md:text-left">
           <h2 className="text-xl font-bold text-[var(--success)]">Consultation Validée & Transmise au SIH avec Succès</h2>
           <p className="text-sm text-[var(--text-body)] mt-1">
-            Le dossier patient de <strong className="text-[var(--success)]">Amira Hadj</strong> a été mis à jour de manière sécurisée sous la référence <strong className="text-[var(--success)]">#TX-98234-A</strong>.
+            Le dossier patient de <strong className="text-[var(--success)]">{patient ? patient.fullName : "Amira Hadj"}</strong> a été mis à jour de manière sécurisée sous la référence <strong className="text-[var(--success)]">#TX-98234-A</strong>.
           </p>
         </div>
         <span className="md:ml-auto lux-badge badge-green">
@@ -66,8 +149,18 @@ export default function Screen5Transmission({ onNewConsultation, onReturnHome })
                 <div className="text-[11px] text-[var(--info)] font-semibold mt-2">{d.size}</div>
               </div>
               <div className="flex flex-col gap-1.5">
-                <button className="px-3 py-1.5 text-[11px] font-medium bg-[var(--info-bg)] text-[var(--info)] rounded-lg hover:bg-[var(--info)] hover:text-white transition cursor-pointer">Aperçu</button>
-                <button className="px-3 py-1.5 text-[11px] font-medium bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-muted)] rounded-lg hover:border-[var(--gold)] transition cursor-pointer">Exporter</button>
+                <button
+                  onClick={() => handlePreview(d)}
+                  className="px-3 py-1.5 text-[11px] font-medium bg-[var(--info-bg)] text-[var(--info)] rounded-lg hover:bg-[var(--info)] hover:text-white transition cursor-pointer"
+                >
+                  Aperçu
+                </button>
+                <button
+                  onClick={() => handleExport(d)}
+                  className="px-3 py-1.5 text-[11px] font-medium bg-[var(--bg-app)] border border-[var(--border-soft)] text-[var(--text-muted)] rounded-lg hover:border-[var(--gold)] transition cursor-pointer"
+                >
+                  Exporter
+                </button>
               </div>
             </div>
           ))}

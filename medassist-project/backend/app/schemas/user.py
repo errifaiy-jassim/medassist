@@ -1,9 +1,9 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 
 class UserBase(BaseModel):
     inpe: str
-    email: EmailStr
+    email: str
     full_name: str
     specialty: Optional[str] = "Cardiologie"
 
