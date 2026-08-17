@@ -99,21 +99,18 @@ export default function Layout({ currentScreen, onNavigate, children, doctorName
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"} shadow-2xl`}
       >
         {/* Logo */}
-<div className="relative px-7 pt-8 pb-6 border-b border-white/10">
+        <div className="relative px-7 pt-8 pb-6 border-b border-white/10">
           <svg className="absolute top-6 right-6 w-16 h-16 text-white/5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M2 12h4l2-6 4 12 2-6h8" className="ecg-line" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--gold)] to-[var(--gold-dark)] flex items-center justify-center text-white shadow-lg shrink-0">
-              <Icon name="stethoscope" size={22} />
-            </div>
+            <img src="/logo.png" alt="MedAssist Logo" className="w-11 h-11 rounded-xl object-contain shrink-0 bg-white p-1" />
             <div>
               <div className="text-lg font-bold leading-tight text-white">MedAssist</div>
               <div className="text-[11px] text-white/70 tracking-wide">Assistant Clinique IA</div>
             </div>
           </div>
         </div>
-
         {/* Nav */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => {

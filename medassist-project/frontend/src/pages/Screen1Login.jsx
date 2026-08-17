@@ -12,7 +12,7 @@ export default function Screen1Login({ onLogin }) {
 
   return (
     <div className="min-h-screen flex bg-[var(--bg-app)]">
-{/* Left brand panel */}
+      {/* Left brand panel */}
       <div className="hidden lg:flex flex-1 relative overflow-hidden bg-gradient-to-br from-[var(--primary-navy)] to-[#0A2A4E] text-white">
         <div className="absolute inset-0 opacity-25" style={{ backgroundImage: "radial-gradient(circle at 20% 20%, #0E9F6E 0, transparent 45%), radial-gradient(circle at 80% 80%, #2563EB 0, transparent 50%)" }} />
         {/* ECG monitor line */}
@@ -22,11 +22,7 @@ export default function Screen1Login({ onLogin }) {
         </svg>
         <div className="absolute inset-0 p-12 lg:p-16 flex flex-col justify-between relative z-10">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[var(--gold)] to-[var(--gold-dark)] flex items-center justify-center text-white shadow-lg">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" /><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4" /><circle cx="20" cy="10" r="2" />
-              </svg>
-            </div>
+            <img src="/logo.png" alt="MedAssist Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1 shadow-lg" />
             <div>
               <div className="text-2xl font-bold leading-tight">MedAssist</div>
               <div className="text-xs text-white/50 tracking-wide">Assistant Clinique IA</div>
@@ -66,19 +62,15 @@ export default function Screen1Login({ onLogin }) {
       {/* Right form panel */}
       <div className="flex-1 flex items-center justify-center p-6 lg:p-10">
         <div className="w-full max-w-[440px] animate-fade-up">
-          {/* Mobile logo */}
-          <div className="lg:hidden flex justify-center mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[var(--gold)] to-[var(--gold-dark)] flex items-center justify-center text-white">
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" /><path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4" /><circle cx="20" cy="10" r="2" />
-                </svg>
-              </div>
-<div className="text-xl font-bold text-[var(--text-heading)]">MedAssist</div>
-            </div>
-          </div>
 
           <div className="luxury-card p-8 lg:p-10">
+            <div className="flex flex-col items-center text-center mb-6">
+              <img src="/logo.png" alt="MedAssist Logo" className="w-16 h-16 rounded-2xl object-contain bg-white p-2 shadow-sm border border-[var(--border-soft)] mb-3" />
+              <div>
+                <div className="text-2xl font-bold leading-none text-[var(--text-heading)]">MedAssist</div>
+                <div className="text-[11px] text-[var(--text-muted)] tracking-wide mt-1.5">Assistant Clinique IA</div>
+              </div>
+            </div>
             <div className="section-label mb-2">Espace Sécurisé</div>
             <h1 className="text-2xl font-bold mb-1">Connexion Médecin</h1>
             <p className="text-sm text-[var(--text-muted)] mb-8">Système d'Aide à la Consultation IA</p>

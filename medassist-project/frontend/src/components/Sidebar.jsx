@@ -30,9 +30,7 @@ export default function Sidebar() {
   return (
     <aside className="w-64 h-screen bg-white border-r border-slate-200 flex flex-col fixed left-0 top-0 z-50">
       <div className="p-6 flex items-center gap-3 border-b border-slate-50">
-        <div className="w-10 h-10 bg-blue-900 rounded-lg flex items-center justify-center text-white shadow-lg">
-          <ShieldCheck size={24} />
-        </div>
+        <img src="/logo.png" alt="MedAssist Logo" className="w-10 h-10 object-contain" />
         <div>
           <h1 className="text-xl font-bold tracking-tight m-0 leading-none">MedAssist</h1>
           <p className="text-[10px] text-slate-500 uppercase tracking-widest mt-1 sans-font">Clinical IA</p>
