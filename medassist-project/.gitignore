@@ -1,0 +1,68 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyc
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+backend/.venv/
+**/__pycache__/
+
+# Environment / secrets — never commit
+.env
+.env.*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+secrets/
+**/credentials*.json
+
+# Logs / temp / local DB
+*.log
+logs/
+app_debug.log
+temp_pdf_*.pdf
+medassist_pdf_*
+*.db
+*.sqlite
+*.sqlite3
+backend/*.db
+backend/medassist_verify.db
+
+# Build / dist artifacts
+dist/
+build/
+frontend/dist/
+frontend/build/
+*.egg-info/
+.coverage
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+backend/tests/_pytest_medassist.db
+backend/tests/.pytest_cache/
+
+# Node
+node_modules/
+frontend/node_modules/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Local uploads / audio scratch
+uploads/
+tmp/
+temp/
+*.webm
+*.wav
+*.ogg
