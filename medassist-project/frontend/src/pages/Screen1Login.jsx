@@ -1,13 +1,29 @@
 import React, { useState } from "react";
+import { login } from "../services/api";
 
 export default function Screen1Login({ onLogin }) {
-  const [email, setEmail] = useState("dr.errifaiyJassim@sante.gov");
-  const [password, setPassword] = useState("medassist2024");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onLogin) onLogin();
+    setError("");
+    if (!email.trim() || !password) {
+      setError("Veuillez renseigner votre identifiant et votre mot de passe.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await login(email.trim(), password);
+      if (onLogin) onLogin();
+    } catch (err) {
+      setError(err.message || "Échec de la connexion");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -99,7 +115,7 @@ export default function Screen1Login({ onLogin }) {
               <div>
                 <div className="flex justify-between items-center mb-1.5">
                   <label className="text-xs font-semibold text-[var(--text-heading)]">Mot de passe</label>
-                  <a href="#forgot" className="text-xs font-semibold text-[var(--gold-dark)] hover:underline">Mot de passe oublié ?</a>
+                  <span className="text-[11px] text-[var(--text-muted)]">Réinitialisation non disponible</span>
                 </div>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
@@ -127,8 +143,14 @@ export default function Screen1Login({ onLogin }) {
                 <label htmlFor="remember" className="text-xs text-[var(--text-muted)] cursor-pointer">Rester connecté sur cet appareil sécurisé</label>
               </div>
 
-              <button type="submit" className="btn-gold w-full py-3 text-base justify-center">
-                Se connecter
+              {error ? (
+                <div className="text-sm text-[var(--danger)] bg-red-50 border border-red-100 rounded-xl px-3 py-2">
+                  {error}
+                </div>
+              ) : null}
+
+              <button type="submit" disabled={loading} className="btn-gold w-full py-3 text-base justify-center disabled:opacity-60">
+                {loading ? "Connexion..." : "Se connecter"}
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" /></svg>
               </button>
             </form>

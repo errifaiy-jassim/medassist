@@ -1,168 +1,324 @@
-const API_BASE_URL = "http://localhost:8000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api/v1";
+/**
+ * Auth session storage.
+ * JWT in localStorage is XSS-sensitive; keep tokens short-lived (server TTL)
+ * and never store API keys / DB credentials in the browser.
+ */
+const TOKEN_KEY = "medassist_access_token";
+const USER_KEY = "medassist_user";
 
-// 1. Récupérer toutes les consultations
-export async function fetchAllConsultations() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/consultations/`);
-    if (!response.ok) throw new Error("Erreur lors de la récupération des consultations");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (fetchAllConsultations):", error);
-    return [];
+export class ApiError extends Error {
+  constructor(message, { status = 0, details = null, offline = false } = {}) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.details = details;
+    this.offline = offline;
   }
 }
 
-// 2. Rechercher un patient
-export async function searchPatients(query) {
+export function getApiBaseUrl() {
+  return API_BASE_URL;
+}
+
+export function getAccessToken() {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getStoredUser() {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) return null;
   try {
-    const response = await fetch(`${API_BASE_URL}/patients/search?q=${encodeURIComponent(query)}`);
-    if (!response.ok) throw new Error("Erreur lors de la recherche du patient");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (searchPatients):", error);
-    return [];
+    return JSON.parse(raw);
+  } catch {
+    return null;
   }
+}
+
+export function setAuthSession(token, user) {
+  localStorage.setItem(TOKEN_KEY, token);
+  if (user) {
+    // Persist only non-sensitive profile fields needed by the UI.
+    const safeUser = {
+      id: user.id,
+      full_name: user.full_name,
+      email: user.email,
+      specialty: user.specialty,
+      role: user.role,
+      inpe: user.inpe,
+      rpps_licence: user.rpps_licence,
+      is_active: user.is_active,
+    };
+    localStorage.setItem(USER_KEY, JSON.stringify(safeUser));
+  }
+}
+
+export function clearAuthSession() {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+}
+
+export function isAuthenticated() {
+  return Boolean(getAccessToken());
+}
+
+function authHeaders(extra = {}) {
+  const headers = { ...extra };
+  const token = getAccessToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
+function formatDetail(detail) {
+  if (!detail) return null;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    return detail
+      .map((item) => item?.msg || item?.detail || JSON.stringify(item))
+      .join(" · ");
+  }
+  if (typeof detail === "object" && detail.message) return detail.message;
+  return "Une erreur est survenue";
+}
+
+async function parseErrorMessage(response, fallback) {
+  try {
+    const payload = await response.json();
+    return formatDetail(payload.detail) || formatDetail(payload.message) || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Central request helper — all authenticated API calls go through here.
+ */
+export async function apiRequest(path, options = {}) {
+  const {
+    method = "GET",
+    body,
+    headers = {},
+    auth = true,
+    expectJson = true,
+    fallbackError = "Erreur de communication avec le serveur",
+  } = options;
+
+  if (typeof navigator !== "undefined" && navigator.onLine === false) {
+    throw new ApiError("Connexion réseau indisponible. Mode hors-ligne actif.", {
+      status: 0,
+      offline: true,
+    });
+  }
+
+  const finalHeaders = auth ? authHeaders(headers) : { ...headers };
+  let requestBody = body;
+  if (body && !(body instanceof FormData) && typeof body === "object") {
+    finalHeaders["Content-Type"] = finalHeaders["Content-Type"] || "application/json";
+    requestBody = JSON.stringify(body);
+  }
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: finalHeaders,
+      body: requestBody,
+    });
+  } catch {
+    throw new ApiError("Impossible de joindre le serveur MedAssist.", {
+      status: 0,
+      offline: true,
+    });
+  }
+
+  if (response.status === 401 && auth) {
+    clearAuthSession();
+    throw new ApiError("Session expirée. Veuillez vous reconnecter.", { status: 401 });
+  }
+
+  if (!response.ok) {
+    const message = await parseErrorMessage(response, fallbackError);
+    throw new ApiError(message, { status: response.status });
+  }
+
+  if (response.status === 204) return null;
+  if (!expectJson) return response;
+  const contentType = response.headers.get("content-type") || "";
+  if (!contentType.includes("application/json")) return response;
+  return response.json();
+}
+
+export async function login(username, password) {
+  const data = await apiRequest("/auth/login", {
+    method: "POST",
+    auth: false,
+    body: { username, password },
+    fallbackError: "Identifiants invalides",
+  });
+  setAuthSession(data.access_token, data.user);
+  return data;
+}
+
+export async function logout() {
+  try {
+    if (getAccessToken()) {
+      await apiRequest("/auth/logout", { method: "POST", expectJson: true });
+    }
+  } catch {
+    // Client-side clear remains authoritative for JWT sessions.
+  } finally {
+    clearAuthSession();
+  }
+}
+
+export async function fetchCurrentUser() {
+  const user = await apiRequest("/auth/me", { fallbackError: "Session invalide" });
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+  return user;
+}
+
+export async function fetchHealth() {
+  return apiRequest("/health", { auth: false, fallbackError: "Service indisponible" });
+}
+
+export async function fetchDashboardStats() {
+  return apiRequest("/dashboard/stats", {
+    fallbackError: "Impossible de charger le tableau de bord",
+  });
+}
+
+export async function fetchAllConsultations() {
+  return apiRequest("/consultations/", {
+    fallbackError: "Erreur lors de la récupération des consultations",
+  });
+}
+
+export async function searchPatients(query) {
+  return apiRequest(`/patients/search?q=${encodeURIComponent(query)}`, {
+    fallbackError: "Erreur lors de la recherche du patient",
+  });
 }
 
 export async function fetchPatients() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/patients/`);
-    if (!response.ok) throw new Error("Erreur lors de la récupération des patients");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (fetchPatients):", error);
-    return [];
-  }
+  return apiRequest("/patients/", {
+    fallbackError: "Erreur lors de la récupération des patients",
+  });
 }
 
-// 2b. Créer un patient
-export async function createPatient(patientData) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/patients/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patientData),
-    });
+export async function fetchPatient(patientId) {
+  return apiRequest(`/patients/${patientId}`, {
+    fallbackError: "Patient introuvable",
+  });
+}
 
-    if (!response.ok) throw new Error("Erreur lors de la création du patient");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (createPatient):", error);
-    return null;
-  }
+export async function createPatient(patientData) {
+  return apiRequest("/patients/", {
+    method: "POST",
+    body: patientData,
+    fallbackError: "Erreur lors de la création du patient",
+  });
 }
 
 export async function updatePatient(patientId, patientData) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/patients/${patientId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(patientData),
-    });
-
-    if (!response.ok) throw new Error("Erreur lors de la mise à jour du patient");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (updatePatient):", error);
-    return null;
-  }
+  return apiRequest(`/patients/${patientId}`, {
+    method: "PUT",
+    body: patientData,
+    fallbackError: "Erreur lors de la mise à jour du patient",
+  });
 }
 
-// Transmission SIH
 export async function sendConsultationToSIH(consultationId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/transmission/send`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ consultation_id: consultationId }),
-    });
-
-    if (!response.ok) throw new Error("Erreur lors de la transmission SIH");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (sendConsultationToSIH):", error);
-    return { status: "error" };
-  }
+  return apiRequest("/transmission/send", {
+    method: "POST",
+    body: { consultation_id: consultationId },
+    fallbackError: "Erreur lors de la transmission SIH",
+  });
 }
 
-// Génération PDF
 export async function generateConsultationPDF(consultationId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/pdf/generate`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ consultation_id: consultationId }),
-    });
-
-    if (!response.ok) throw new Error("Erreur lors de la génération PDF");
-    return await response.blob();
-  } catch (error) {
-    console.error("API Error (generateConsultationPDF):", error);
-    return null;
-  }
+  const response = await apiRequest("/pdf/generate", {
+    method: "POST",
+    body: { consultation_id: consultationId },
+    expectJson: false,
+    fallbackError: "Erreur lors de la génération PDF",
+  });
+  return response.blob();
 }
 
-// 4. Analyser le texte avec le LLM Qwen
-export async function analyzeConsultationText(text) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/consultations/extract-entities`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ text }),
-    });
-    if (!response.ok) throw new Error("Erreur lors de l'analyse LLM");
-    const data = await response.json();
-    return data.data;
-  } catch (error) {
-    console.error("API Error (analyzeConsultationText):", error);
-    return null;
-  }
+export async function analyzeConsultationText(text, consultationId = null) {
+  const body = { text };
+  if (consultationId) body.consultation_id = consultationId;
+  const data = await apiRequest("/consultations/extract-entities", {
+    method: "POST",
+    body,
+    fallbackError: "Erreur lors de l'analyse LLM",
+  });
+  return data;
 }
 
-// 5. Envoyer l'audio au moteur Faster-Whisper
+export async function processMedicalCoding({
+  diagnostics = [],
+  prescriptions = [],
+  biology = [],
+  consultationId = null,
+} = {}) {
+  const body = { diagnostics, prescriptions, biology };
+  if (consultationId) body.consultation_id = consultationId;
+  return apiRequest("/coding/process", {
+    method: "POST",
+    body,
+    fallbackError: "Erreur lors de la codification médicale",
+  });
+}
+
+export async function validateConsultation(consultationId) {
+  return apiRequest(`/consultations/${consultationId}/validate`, {
+    method: "POST",
+    fallbackError: "Erreur lors de la validation de la consultation",
+  });
+}
+
+export async function fetchConsultation(consultationId) {
+  return apiRequest(`/consultations/${consultationId}`, {
+    fallbackError: "Consultation introuvable",
+  });
+}
+
 export async function sendAudioForTranscription(audioBlob) {
   const formData = new FormData();
   formData.append("file", audioBlob, "recording.webm");
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/stt/transcribe`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) throw new Error("Erreur lors de la transcription STT");
-
-    const data = await response.json();
-    return data.transcription;
-  } catch (error) {
-    console.error("API STT Error (sendAudioForTranscription):", error);
-    return null;
-  }
+  const data = await apiRequest("/stt/transcribe", {
+    method: "POST",
+    body: formData,
+    fallbackError: "Erreur lors de la transcription STT",
+  });
+  return data.transcription || data.text || null;
 }
 
 export async function createConsultation(consultationData) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/consultations/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(consultationData),
-    });
+  return apiRequest("/consultations/", {
+    method: "POST",
+    body: consultationData,
+    fallbackError: "Erreur lors de la création de la consultation",
+  });
+}
 
-    if (!response.ok) throw new Error("Erreur lors de la création de la consultation");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (createConsultation):", error);
-    return null;
-  }
+export async function updateConsultation(consultationId, consultationData) {
+  return apiRequest(`/consultations/${consultationId}`, {
+    method: "PATCH",
+    body: consultationData,
+    fallbackError: "Erreur lors de la mise à jour de la consultation",
+  });
 }
 
 export async function fetchPatientConsultations(patientId) {
-  try {
-    const response = await fetch(`${API_BASE_URL}/consultations/patient/${patientId}`);
-    if (!response.ok) throw new Error("Erreur lors de la récupération des consultations");
-    return await response.json();
-  } catch (error) {
-    console.error("API Error (fetchPatientConsultations):", error);
-    return [];
-  }
+  return apiRequest(`/consultations/patient/${patientId}`, {
+    fallbackError: "Erreur lors de la récupération des consultations",
+  });
+}
+
+export async function fetchBackendSettings() {
+  return apiRequest("/settings/", {
+    fallbackError: "Impossible de charger les paramètres",
+  });
 }

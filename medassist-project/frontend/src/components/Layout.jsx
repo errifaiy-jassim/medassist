@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { searchPatients } from "../services/api";
 
 const NAV_ITEMS = [
   { key: "screen2", label: "Tableau de bord", icon: "dashboard" },
@@ -88,8 +89,54 @@ function Icon({ name, size = 20 }) {
   }
 }
 
-export default function Layout({ currentScreen, onNavigate, children, doctorName = "Dr. Errifaiy Jassim", onLogout }) {
+export default function Layout({
+  currentScreen,
+  onNavigate,
+  children,
+  doctorName,
+  onLogout,
+  user = null,
+  isOffline = false,
+  databaseConnected = true,
+}) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
+  const [searchError, setSearchError] = useState("");
+
+  const displayName = doctorName
+    || (user?.full_name ? (user.full_name.toLowerCase().startsWith("dr") ? user.full_name : `Dr. ${user.full_name}`) : "Praticien");
+  const specialty = user?.specialty || "Médecine";
+  const initials = displayName
+    .replace(/^Dr\.?\s*/i, "")
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || "MD";
+
+  const handleSearch = async (event) => {
+    event.preventDefault();
+    const q = searchQuery.trim();
+    if (!q) {
+      setSearchResults([]);
+      return;
+    }
+    if (isOffline) {
+      setSearchError("Recherche indisponible hors-ligne.");
+      return;
+    }
+    setSearchError("");
+    try {
+      const results = await searchPatients(q);
+      setSearchResults(results || []);
+      onNavigate("patients");
+    } catch (err) {
+      setSearchError(err.message || "Erreur de recherche");
+      setSearchResults([]);
+    }
+  };
 
   return (
     <div className="flex min-h-screen">
@@ -136,11 +183,11 @@ export default function Layout({ currentScreen, onNavigate, children, doctorName
           <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--gold-light)] to-[var(--gold)] flex items-center justify-center text-[var(--primary-navy)] font-bold text-sm">
-                EJ
+                {initials}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold truncate">{doctorName}</div>
-                <div className="text-[11px] text-white/50">Cardiologue • RPPS 012345</div>
+                <div className="text-sm font-semibold truncate">{displayName}</div>
+                <div className="text-[11px] text-white/50">{specialty}{user?.inpe ? ` • ${user.inpe}` : ""}</div>
               </div>
             </div>
             <button
@@ -174,27 +221,42 @@ export default function Layout({ currentScreen, onNavigate, children, doctorName
             </button>
 
             {/* Search */}
-            <div className="hidden md:flex items-center flex-1 max-w-md bg-[var(--bg-app)] rounded-xl px-4 py-2.5 gap-2 border border-transparent focus-within:border-[var(--gold)]">
+            <form onSubmit={handleSearch} className="hidden md:flex relative items-center flex-1 max-w-md bg-[var(--bg-app)] rounded-xl px-4 py-2.5 gap-2 border border-transparent focus-within:border-[var(--gold)]">
               <span className="text-[var(--text-muted)]"><Icon name="search" size={18} /></span>
               <input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Rechercher un patient, un dossier..."
                 className="bg-transparent outline-none text-sm w-full text-[var(--text-heading)] placeholder-[#9CA3AF]"
+                disabled={isOffline}
               />
-            </div>
+              {searchError ? (
+                <span className="absolute left-0 top-full mt-1 text-[11px] text-[var(--danger)]">{searchError}</span>
+              ) : null}
+              {searchResults.length > 0 ? (
+                <span className="text-[11px] text-[var(--text-muted)] whitespace-nowrap">{searchResults.length} résultat(s)</span>
+              ) : null}
+            </form>
 
             <div className="flex-1 md:hidden" />
 
             {/* Right icons */}
             <div className="flex items-center gap-3">
-              <span className="hidden sm:inline-flex lux-badge badge-green">
-                <span className="w-1.5 h-1.5 bg-[var(--success)] rounded-full" /> SIH Connecté
+              <span className={`hidden sm:inline-flex lux-badge ${isOffline || !databaseConnected ? "badge-amber" : "badge-green"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${isOffline || !databaseConnected ? "bg-[var(--warning)]" : "bg-[var(--success)]"}`} />
+                {isOffline ? "Hors-ligne" : databaseConnected ? "Serveur connecté" : "BDD indisponible"}
               </span>
-              <button className="relative p-2 rounded-xl hover:bg-[var(--bg-app)] text-[var(--text-muted)] cursor-pointer" aria-label="Notifications">
+              <button
+                type="button"
+                onClick={() => onNavigate("offline")}
+                className="relative p-2 rounded-xl hover:bg-[var(--bg-app)] text-[var(--text-muted)] cursor-pointer"
+                aria-label="État de connexion"
+              >
                 <Icon name="bell" size={20} />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--danger)] rounded-full" />
+                {isOffline ? <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--danger)] rounded-full" /> : null}
               </button>
               <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--primary-navy)] to-[var(--primary-navy-2)] text-white flex items-center justify-center text-xs font-bold">
-                EJ
+                {initials}
               </div>
             </div>
           </div>
