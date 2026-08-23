@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { login } from "../services/api";
+import medassistLogo from "../assets/medassist-logo.png";
 
 export default function Screen1Login({ onLogin }) {
   const [email, setEmail] = useState("");
@@ -38,7 +39,7 @@ export default function Screen1Login({ onLogin }) {
         </svg>
         <div className="absolute inset-0 p-12 lg:p-16 flex flex-col justify-between relative z-10">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="MedAssist Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1 shadow-lg" />
+            <img src={medassistLogo} alt="MedAssist Logo" className="w-12 h-12 rounded-xl object-contain bg-white p-1 shadow-lg" />
             <div>
               <div className="text-2xl font-bold leading-tight">MedAssist</div>
               <div className="text-xs text-white/50 tracking-wide">Assistant Clinique IA</div>
@@ -81,7 +82,7 @@ export default function Screen1Login({ onLogin }) {
 
           <div className="luxury-card p-8 lg:p-10">
             <div className="flex flex-col items-center text-center mb-6">
-              <img src="/logo.png" alt="MedAssist Logo" className="w-16 h-16 rounded-2xl object-contain bg-white p-2 shadow-sm border border-[var(--border-soft)] mb-3" />
+              <img src={medassistLogo} alt="MedAssist Logo" className="w-16 h-16 rounded-2xl object-contain bg-white p-2 shadow-sm border border-[var(--border-soft)] mb-3" />
               <div>
                 <div className="text-2xl font-bold leading-none text-[var(--text-heading)]">MedAssist</div>
                 <div className="text-[11px] text-[var(--text-muted)] tracking-wide mt-1.5">Assistant Clinique IA</div>
@@ -97,7 +98,7 @@ export default function Screen1Login({ onLogin }) {
                   Identifiant Professionnel (INPE) ou Email
                 </label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                  <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[#9CA3AF]">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
                     </svg>
@@ -106,7 +107,7 @@ export default function Screen1Login({ onLogin }) {
                     type="text"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="lux-input pl-11"
+                    className="lux-input !pl-11"
                     placeholder="Nom d'utilisateur"
                   />
                 </div>
@@ -118,7 +119,7 @@ export default function Screen1Login({ onLogin }) {
                   <span className="text-[11px] text-[var(--text-muted)]">Réinitialisation non disponible</span>
                 </div>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9CA3AF]">
+                  <span className="pointer-events-none absolute inset-y-0 left-4 flex items-center text-[#9CA3AF]">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />
                     </svg>
@@ -127,10 +128,10 @@ export default function Screen1Login({ onLogin }) {
                     type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="lux-input pl-11 pr-11"
+                    className="lux-input !pl-11 !pr-11"
                     placeholder="••••••••••"
                   />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9CA3AF] hover:text-[var(--text-heading)] cursor-pointer">
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-4 flex items-center text-[#9CA3AF] hover:text-[var(--text-heading)] cursor-pointer">
                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       {showPassword ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" /><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" /><line x1="1" y1="1" x2="23" y2="23" /></> : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></>}
                     </svg>
