@@ -203,3 +203,25 @@ def patch_patient(
             detail="Erreur base de données lors de la mise à jour du patient",
         )
     return patient
+
+
+@router.delete("/{patient_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_patient(
+    patient_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    patient = patients_for_user(db, current_user).filter(Patient.id == patient_id).first()
+    ensure_patient_access(patient, current_user)
+
+    db.delete(patient)
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Database error while deleting patient")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur base de données lors de la suppression du patient",
+        )
+    return None

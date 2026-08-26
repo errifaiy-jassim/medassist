@@ -227,6 +227,13 @@ export async function updatePatient(patientId, patientData) {
   });
 }
 
+export async function deletePatient(patientId) {
+  return apiRequest(`/patients/${patientId}`, {
+    method: "DELETE",
+    fallbackError: "Erreur lors de la suppression du patient",
+  });
+}
+
 export async function sendConsultationToSIH(consultationId) {
   return apiRequest("/transmission/send", {
     method: "POST",

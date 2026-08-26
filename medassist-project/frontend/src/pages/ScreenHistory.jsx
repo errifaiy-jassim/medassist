@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  deletePatient,
   fetchAllConsultations,
   fetchConsultation,
   generateConsultationPDF,
@@ -133,6 +134,7 @@ export default function ScreenHistory({ isOffline }) {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [pdfError, setPdfError] = useState("");
   const [pdfMessage, setPdfMessage] = useState("");
+  const [deleteBusy, setDeleteBusy] = useState(false);
 
   const load = useCallback(async () => {
     if (isOffline) {
@@ -238,6 +240,24 @@ export default function ScreenHistory({ isOffline }) {
       setPdfError(err.message || "Erreur lors de la génération du PDF");
     } finally {
       setPdfBusy(false);
+    }
+  };
+
+  const handleDeletePatient = async () => {
+    if (!detail?.patient_id) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce patient ? Cette action supprimera également toutes ses consultations associées.")) {
+      return;
+    }
+    setDeleteBusy(true);
+    try {
+      await deletePatient(detail.patient_id);
+      setSelectedId(null);
+      setDetail(null);
+      await load(); // Reload the history
+    } catch (err) {
+      alert(err.message || "Erreur lors de la suppression du patient");
+    } finally {
+      setDeleteBusy(false);
     }
   };
 
@@ -486,6 +506,14 @@ export default function ScreenHistory({ isOffline }) {
                     onClick={() => handleGeneratePdf({ open: false })}
                   >
                     {pdfBusy ? "Génération…" : "Télécharger PDF"}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-outline-danger text-sm ml-auto disabled:opacity-50"
+                    disabled={deleteBusy || isOffline}
+                    onClick={handleDeletePatient}
+                  >
+                    {deleteBusy ? "Suppression…" : "Supprimer Patient"}
                   </button>
                 </div>
                 {!canGeneratePdf(detail) ? (
