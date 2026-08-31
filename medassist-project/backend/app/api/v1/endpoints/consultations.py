@@ -278,3 +278,24 @@ def update_consultation(
             detail="Erreur base de données lors de la mise à jour de la consultation",
         )
     return _to_response(consultation)
+
+
+@router.delete("/{consultation_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_consultation(
+    consultation_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    consultation = _load_consultation_for_user(db, consultation_id, current_user)
+    try:
+        db.delete(consultation)
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        logger.exception("Database error while deleting consultation")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Erreur base de données lors de la suppression de la consultation",
+        )
+    return None
+

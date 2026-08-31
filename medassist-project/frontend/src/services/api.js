@@ -234,6 +234,14 @@ export async function deletePatient(patientId) {
   });
 }
 
+export async function deleteConsultation(consultationId) {
+  return apiRequest(`/consultations/${consultationId}`, {
+    method: "DELETE",
+    expectJson: false,
+    fallbackError: "Erreur lors de la suppression de la consultation",
+  });
+}
+
 export async function sendConsultationToSIH(consultationId) {
   return apiRequest("/transmission/send", {
     method: "POST",

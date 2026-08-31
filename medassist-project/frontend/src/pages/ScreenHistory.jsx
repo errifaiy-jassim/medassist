@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Trash2 } from "lucide-react";
 import {
+  deleteConsultation,
   deletePatient,
   fetchAllConsultations,
   fetchConsultation,
@@ -243,6 +245,27 @@ export default function ScreenHistory({ isOffline }) {
     }
   };
 
+  const handleDeleteConsultation = async (consultationId, e) => {
+    if (e) e.stopPropagation();
+    if (!consultationId || isOffline) return;
+    if (!window.confirm("Êtes-vous sûr de vouloir supprimer cette consultation ?")) {
+      return;
+    }
+    setDeleteBusy(true);
+    try {
+      await deleteConsultation(consultationId);
+      if (selectedId === consultationId) {
+        setSelectedId(null);
+        setDetail(null);
+      }
+      setRows((prev) => prev.filter((r) => r.id !== consultationId));
+    } catch (err) {
+      alert(err.message || "Erreur lors de la suppression de la consultation");
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
+
   const handleDeletePatient = async () => {
     if (!detail?.patient_id) return;
     if (!window.confirm("Êtes-vous sûr de vouloir supprimer ce patient ? Cette action supprimera également toutes ses consultations associées.")) {
@@ -348,6 +371,7 @@ export default function ScreenHistory({ isOffline }) {
                       <th className="px-6 py-4 font-semibold">Codage</th>
                       <th className="px-6 py-4 font-semibold">Transmission</th>
                       <th className="px-6 py-4 font-semibold">PDF</th>
+                      <th className="px-6 py-4 font-semibold text-center">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-soft)]">
@@ -379,6 +403,18 @@ export default function ScreenHistory({ isOffline }) {
                           <span className={`lux-badge ${t.pdfReady ? "badge-green" : "badge-amber"}`}>
                             {t.pdf}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeleteConsultation(t.id, e)}
+                            disabled={deleteBusy || isOffline}
+                            className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center justify-center cursor-pointer disabled:opacity-50"
+                            title="Supprimer cette consultation"
+                          >
+                            <Trash2 size={16} />
+                            <span className="sr-only">Supprimer</span>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -509,11 +545,20 @@ export default function ScreenHistory({ isOffline }) {
                   </button>
                   <button
                     type="button"
-                    className="btn-outline-danger text-sm ml-auto disabled:opacity-50"
+                    className="btn-outline-danger text-sm disabled:opacity-50 inline-flex items-center gap-1.5"
+                    disabled={deleteBusy || isOffline}
+                    onClick={(e) => handleDeleteConsultation(detail.id, e)}
+                  >
+                    <Trash2 size={15} />
+                    {deleteBusy ? "Suppression…" : "Supprimer Consultation"}
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-slate-400 hover:text-red-600 underline ml-auto disabled:opacity-50"
                     disabled={deleteBusy || isOffline}
                     onClick={handleDeletePatient}
                   >
-                    {deleteBusy ? "Suppression…" : "Supprimer Patient"}
+                    Supprimer Patient
                   </button>
                 </div>
                 {!canGeneratePdf(detail) ? (

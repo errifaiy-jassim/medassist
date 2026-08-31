@@ -75,8 +75,6 @@ def normalize_extracted_entities(raw: dict) -> dict:
         label = _label_from_item(item, "label", "name", "treatment")
         if label:
             treatments.append({"label": label})
-    if not treatments:
-        treatments = [{"label": m["drug_name"]} for m in medications]
 
     examinations = []
     for item in biology_raw:
@@ -133,18 +131,28 @@ class LLMService:
 
     def extract_medical_data(self, transcription_text: str) -> dict:
         assert_llm_host_allowed(self.ollama_url)
+        
         prompt = f"""
-Tu es un assistant médical IA spécialisé dans la structuration de consultations.
-Analyse la transcription suivante et extrait UNIQUEMENT les informations explicitement mentionnées.
+Tu es l'Assistant IA Clinique du système MedAssist.
+Ton rôle est d'analyser la transcription médicale et d'extraire les informations cliniques pertinentes.
 
-TRANSCRIPTION :
+TRANSCRIPTION CLINIQUE :
 \"\"\"{transcription_text}\"\"\"
 
-RÈGLES STRICTES :
-1. Réponds UNIQUEMENT avec un objet JSON valide.
-2. N'invente aucune information absente de la transcription.
-3. Si une information n'est pas mentionnée, utilise [] ou null.
-4. Utilise exactement cette structure :
+RÈGLES ET PRINCIPES DIRECTEURS :
+
+1. NATURE DES DONNÉES (PROPOSITIONS ÉDITABLES) :
+   - Toutes les entités extraites (symptômes, diagnostics, traitements, prescriptions, examens) constituent uniquement des PROPOSITIONS IA.
+   - Ces propositions seront présentées au médecin dans l'interface de validation pour révision, ajout, modification ou suppression manuelle avant toute confirmation définitive.
+
+2. EXIGENCE D'EXACTITUDE ET ZÉRO HALLUCINATION :
+   - Extrais EXCLUSIVEMENT les faits cliniques réels et explicitement énoncés dans la transcription.
+   - Ne jamais inventer, supposer, extrapoler ou introduire de données médicales absentes du texte.
+   - Si la transcription est vide, contient uniquement des hésitations, des interjections (ex: "Pfff, c'est ça") ou des expressions non médicales, tu dois impérativement renvoyer des listes vides [] pour toutes les catégories.
+
+3. STRUCTURE DU FORMAT DE SORTIE :
+   - Réponds STRICTEMENT et UNIQUEMENT avec un objet JSON valide, sans texte d'introduction ni de conclusion.
+   - Respecte scrupuleusement le schéma JSON suivant :
 
 {{
   "demographics": {{
@@ -152,19 +160,32 @@ RÈGLES STRICTES :
     "gender": null,
     "blood_group": null
   }},
-  "symptoms": [{{"label": "symptôme mentionné"}}],
-  "diagnostics": [{{"label": "diagnostic mentionné"}}],
-  "treatments": [{{"label": "traitement non médicamenteux mentionné"}}],
+  "symptoms": [
+    {{ "label": "nom exact du symptôme mentionné" }}
+  ],
+  "diagnostics": [
+    {{ "label": "nom exact du diagnostic mentionné" }}
+  ],
+  "treatments": [
+    {{ "label": "nom du traitement ou prise en charge non médicamenteuse" }}
+  ],
   "prescriptions": [
     {{
-      "drug_name": "médicament",
-      "dosage": "posologie si mentionnée",
-      "frequency": "fréquence si mentionnée"
+      "drug_name": "nom du médicament",
+      "dosage": "posologie si mentionnée, sinon null",
+      "frequency": "fréquence/durée si mentionnée, sinon null"
     }}
   ],
-  "biology": [{{"test_name": "examen biologique demandé"}}],
-  "imaging": [{{"type": "examen d'imagerie", "indication": "raison si mentionnée"}}],
-  "structured_summary": "synthèse factuelle basée uniquement sur la transcription"
+  "biology": [
+    {{ "test_name": "nom de l'examen biologique demandé" }}
+  ],
+  "imaging": [
+    {{ 
+      "type": "nom de l'examen d'imagerie", 
+      "indication": "raison clinique si mentionnée, sinon null" 
+    }}
+  ],
+  "structured_summary": "Synthèse factuelle et fidèle de la consultation. Si aucune donnée médicale n'est présente, indiquer : 'La transcription ne contient aucune donnée clinique exploitable.'"
 }}
 """
         payload = {

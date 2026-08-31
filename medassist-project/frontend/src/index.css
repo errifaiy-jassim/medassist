@@ -152,6 +152,27 @@ p {
   background: var(--medical-blue-light);
 }
 
+.btn-outline-danger {
+  background: transparent;
+  color: var(--danger);
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.875rem;
+  border: 1.5px solid var(--danger-bg);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-danger:hover {
+  border-color: var(--danger);
+  background: var(--danger-bg);
+}
+
 /* ---------- Inputs ---------- */
 .lux-input {
   width: 100%;

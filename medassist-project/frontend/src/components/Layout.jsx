@@ -1,5 +1,27 @@
-import React, { useState } from "react";
-import { searchPatients } from "../services/api";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Activity,
+  AlertCircle,
+  Bell,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Clock,
+  FileText,
+  History,
+  LogOut,
+  Radio,
+  Search,
+  Settings,
+  ShieldCheck,
+  Stethoscope,
+  User,
+  Users,
+  Wifi,
+  WifiOff,
+  X,
+} from "lucide-react";
+import { fetchDashboardStats, searchPatients } from "../services/api";
 
 const NAV_ITEMS = [
   { key: "screen2", label: "Tableau de bord", icon: "dashboard" },
@@ -77,13 +99,6 @@ function Icon({ name, size = 20 }) {
           <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
         </svg>
       );
-    case "stethoscope":
-      return (
-        <svg {...common}>
-          <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
-          <path d="M8 15v1a6 6 0 0 0 6 6 6 6 0 0 0 6-6v-4" /><circle cx="20" cy="10" r="2" />
-        </svg>
-      );
     default:
       return null;
   }
@@ -104,17 +119,121 @@ export default function Layout({
   const [searchResults, setSearchResults] = useState([]);
   const [searchError, setSearchError] = useState("");
 
-  const displayName = doctorName
-    || (user?.full_name ? (user.full_name.toLowerCase().startsWith("dr") ? user.full_name : `Dr. ${user.full_name}`) : "Praticien");
-  const specialty = user?.specialty || "Médecine";
-  const initials = displayName
-    .replace(/^Dr\.?\s*/i, "")
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase() || "MD";
+  // Dropdown states for Bell and Profile
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  const notifRef = useRef(null);
+  const profileRef = useRef(null);
+
+  const displayName =
+    doctorName ||
+    (user?.full_name
+      ? user.full_name.toLowerCase().startsWith("dr")
+        ? user.full_name
+        : `Dr. ${user.full_name}`
+      : "Dr. Ahmed Mansouri");
+  const specialty = user?.specialty || "Médecine Générale";
+  const initials =
+    displayName
+      .replace(/^Dr\.?\s*/i, "")
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "AM";
+
+  // Close popups on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false);
+      }
+      if (profileRef.current && !profileRef.current.contains(e.target)) {
+        setShowProfileMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  // Load clinical notifications / activity
+  useEffect(() => {
+    const loadClinicalNotifications = async () => {
+      const notifs = [];
+
+      if (isOffline) {
+        notifs.push({
+          id: "offline-alert",
+          title: "Mode Hors-Ligne Actif",
+          message: "Les modifications seront enregistrées localement et synchronisées lors du retour de la connexion.",
+          type: "warning",
+          time: "En cours",
+          actionScreen: "offline",
+        });
+      }
+
+      if (!databaseConnected && !isOffline) {
+        notifs.push({
+          id: "db-alert",
+          title: "Base de données inaccessible",
+          message: "Vérifiez la connexion au serveur MedAssist.",
+          type: "danger",
+          time: "Urgent",
+          actionScreen: "settings",
+        });
+      }
+
+      try {
+        if (!isOffline) {
+          const stats = await fetchDashboardStats();
+          if (stats?.pending_dictations > 0) {
+            notifs.push({
+              id: "pending-dictations",
+              title: `${stats.pending_dictations} consultation(s) en attente`,
+              message: "Certaines dictées attendent validation médicale.",
+              type: "info",
+              time: "Aujourd'hui",
+              actionScreen: "history",
+            });
+          }
+          if (Array.isArray(stats?.recent_activity)) {
+            stats.recent_activity.slice(0, 3).forEach((act, idx) => {
+              notifs.push({
+                id: `act-${idx}`,
+                title: act.patient || "Consultation",
+                message: `${act.action || "Mise à jour"} ${act.code ? `(${act.code})` : ""}`,
+                type: act.status === "green" ? "success" : act.status === "blue" ? "info" : "warning",
+                time: act.time ? new Date(act.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Récemment",
+                actionScreen: "history",
+              });
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch notifications:", err);
+      }
+
+      if (notifs.length === 0) {
+        notifs.push({
+          id: "system-ready",
+          title: "Système MedAssist opérationnel",
+          message: "Tous les services IA et codification CIM-10 sont connectés.",
+          type: "success",
+          time: "Prêt",
+          actionScreen: "screen2",
+        });
+      }
+
+      setNotifications(notifs);
+      setUnreadCount(notifs.filter((n) => n.type === "warning" || n.type === "danger" || n.id === "pending-dictations").length || notifs.length);
+    };
+
+    loadClinicalNotifications();
+  }, [isOffline, databaseConnected]);
 
   const handleSearch = async (event) => {
     event.preventDefault();
@@ -138,10 +257,15 @@ export default function Layout({
     }
   };
 
+  const handleNotificationClick = (screen) => {
+    setShowNotifications(false);
+    if (screen) onNavigate(screen);
+  };
+
   return (
-    <div className="flex min-h-screen">
-{/* Sidebar */}
-<aside
+    <div className="flex min-h-screen bg-[var(--bg-app)]">
+      {/* Sidebar */}
+      <aside
         className={`fixed inset-y-0 left-0 z-40 w-72 bg-gradient-to-b from-[var(--primary-navy)] to-[var(--primary-navy-2)] text-white flex flex-col transform transition-transform duration-300 lg:translate-x-0 lg:static
           ${mobileOpen ? "translate-x-0" : "-translate-x-full"} shadow-2xl`}
       >
@@ -158,14 +282,18 @@ export default function Layout({
             </div>
           </div>
         </div>
-        {/* Nav */}
+
+        {/* Nav Items */}
         <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
           {NAV_ITEMS.map((item) => {
             const active = currentScreen === item.key;
             return (
               <button
                 key={item.key}
-                onClick={() => { onNavigate(item.key); setMobileOpen(false); }}
+                onClick={() => {
+                  onNavigate(item.key);
+                  setMobileOpen(false);
+                }}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all cursor-pointer
                   ${active
                     ? "bg-[var(--medical-blue)] text-white shadow-lg"
@@ -178,7 +306,7 @@ export default function Layout({
           })}
         </nav>
 
-        {/* Doctor card */}
+        {/* Doctor Card in Sidebar */}
         <div className="px-4 pb-6">
           <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
             <div className="flex items-center gap-3">
@@ -205,10 +333,10 @@ export default function Layout({
         <div className="fixed inset-0 bg-black/40 z-30 lg:hidden" onClick={() => setMobileOpen(false)} />
       )}
 
-      {/* Main */}
+      {/* Main Container */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top header */}
-        <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-[var(--border-soft)]">
+        {/* Top Header */}
+        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-[var(--border-soft)] shadow-sm">
           <div className="flex items-center gap-4 px-6 lg:px-10 h-16 lg:h-[72px]">
             <button
               onClick={() => setMobileOpen(true)}
@@ -220,13 +348,13 @@ export default function Layout({
               </svg>
             </button>
 
-            {/* Search */}
-            <form onSubmit={handleSearch} className="hidden md:flex relative items-center flex-1 max-w-md bg-[var(--bg-app)] rounded-xl px-4 py-2.5 gap-2 border border-transparent focus-within:border-[var(--gold)]">
-              <span className="text-[var(--text-muted)]"><Icon name="search" size={18} /></span>
+            {/* Search Box */}
+            <form onSubmit={handleSearch} className="hidden md:flex relative items-center flex-1 max-w-md bg-[var(--bg-app)] rounded-xl px-4 py-2.5 gap-2 border border-transparent focus-within:border-[var(--medical-blue)] transition-all">
+              <span className="text-[var(--text-muted)]"><Search size={18} /></span>
               <input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Rechercher un patient, un dossier..."
+                placeholder="Rechercher un patient, NIR, dossier..."
                 className="bg-transparent outline-none text-sm w-full text-[var(--text-heading)] placeholder-[#9CA3AF]"
                 disabled={isOffline}
               />
@@ -240,35 +368,220 @@ export default function Layout({
 
             <div className="flex-1 md:hidden" />
 
-            {/* Right icons */}
-            <div className="flex items-center gap-3">
+            {/* Right Icons (Connection Badge, Bell, Profile Circle) */}
+            <div className="flex items-center gap-4">
+              {/* Online / Offline Status Badge */}
               <span className={`hidden sm:inline-flex lux-badge ${isOffline || !databaseConnected ? "badge-amber" : "badge-green"}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${isOffline || !databaseConnected ? "bg-[var(--warning)]" : "bg-[var(--success)]"}`} />
-                {isOffline ? "Hors-ligne" : databaseConnected ? "Serveur connecté" : "BDD indisponible"}
+                <span className={`w-2 h-2 rounded-full ${isOffline || !databaseConnected ? "bg-[var(--warning)] animate-pulse" : "bg-[var(--success)]"}`} />
+                {isOffline ? "Mode Hors-ligne" : databaseConnected ? "Serveur Connecté" : "BDD Indisponible"}
               </span>
-              <button
-                type="button"
-                onClick={() => onNavigate("offline")}
-                className="relative p-2 rounded-xl hover:bg-[var(--bg-app)] text-[var(--text-muted)] cursor-pointer"
-                aria-label="État de connexion"
-              >
-                <Icon name="bell" size={20} />
-                {isOffline ? <span className="absolute top-1 right-1 w-2 h-2 bg-[var(--danger)] rounded-full" /> : null}
-              </button>
-              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[var(--primary-navy)] to-[var(--primary-navy-2)] text-white flex items-center justify-center text-xs font-bold">
-                {initials}
+
+              {/* 1. NOTIFICATION BELL (Interactive with Dropdown) */}
+              <div className="relative" ref={notifRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowNotifications(!showNotifications);
+                    setShowProfileMenu(false);
+                  }}
+                  className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
+                    showNotifications
+                      ? "bg-[var(--medical-blue-light)] text-[var(--medical-blue-dark)] ring-2 ring-[var(--medical-blue)]"
+                      : "hover:bg-slate-100 text-slate-600 hover:text-slate-900"
+                  }`}
+                  aria-label="Notifications"
+                  title="Centre de notifications"
+                >
+                  <Bell size={21} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm border-2 border-white">
+                      {unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown Card */}
+                {showNotifications && (
+                  <div className="absolute right-0 top-12 mt-2 w-84 sm:w-96 bg-white border border-[var(--border-soft)] rounded-2xl shadow-2xl z-50 p-4 animate-fade-up">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <Bell size={17} className="text-[var(--medical-blue)]" />
+                        <h4 className="font-bold text-sm text-[var(--text-heading)]">Notifications</h4>
+                        {unreadCount > 0 && (
+                          <span className="lux-badge badge-blue text-[10px] py-0.5 px-2 font-bold">{unreadCount}</span>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUnreadCount(0)}
+                        className="text-xs text-[var(--medical-blue)] hover:underline font-medium cursor-pointer"
+                      >
+                        Tout marquer lu
+                      </button>
+                    </div>
+
+                    <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+                      {notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif.actionScreen)}
+                          className="p-3 bg-[var(--bg-app)] hover:bg-blue-50/70 border border-transparent hover:border-blue-200 rounded-xl transition-all cursor-pointer flex items-start gap-3"
+                        >
+                          <div className="mt-0.5 shrink-0">
+                            {notif.type === "danger" ? (
+                              <AlertCircle size={17} className="text-red-500" />
+                            ) : notif.type === "warning" ? (
+                              <WifiOff size={17} className="text-amber-500" />
+                            ) : notif.type === "info" ? (
+                              <Activity size={17} className="text-[var(--medical-blue)]" />
+                            ) : (
+                              <CheckCircle2 size={17} className="text-emerald-600" />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className="text-xs font-bold text-[var(--text-heading)] truncate">{notif.title}</span>
+                              <span className="text-[10px] text-slate-400 shrink-0">{notif.time}</span>
+                            </div>
+                            <p className="text-xs text-[var(--text-body)] mt-0.5 leading-relaxed">{notif.message}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                      <span className="text-slate-400">Système MedAssist HDS</span>
+                      <button
+                        type="button"
+                        onClick={() => handleNotificationClick("history")}
+                        className="text-[var(--medical-blue)] font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        Historique complet <ChevronRight size={13} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* 2. USER PROFILE CIRCLE (AM) (Interactive with Dropdown) */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowProfileMenu(!showProfileMenu);
+                    setShowNotifications(false);
+                  }}
+                  className={`flex items-center gap-2.5 p-1 rounded-full transition-all duration-200 cursor-pointer ${
+                    showProfileMenu
+                      ? "ring-2 ring-[var(--medical-blue)] ring-offset-2"
+                      : "hover:opacity-90"
+                  }`}
+                  aria-label="Menu profil"
+                  title="Profil et options"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--primary-navy)] to-[var(--primary-navy-2)] text-white flex items-center justify-center text-sm font-bold shadow-sm">
+                    {initials}
+                  </div>
+                </button>
+
+                {/* Profile Dropdown Menu */}
+                {showProfileMenu && (
+                  <div className="absolute right-0 top-12 mt-2 w-72 bg-white border border-[var(--border-soft)] rounded-2xl shadow-2xl z-50 p-2 animate-fade-up">
+                    {/* User Identity Info */}
+                    <div className="p-3 bg-[var(--bg-app)] rounded-xl mb-2 flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-[var(--primary-navy)] to-[var(--primary-navy-2)] text-white flex items-center justify-center font-bold text-sm shadow-inner shrink-0">
+                        {initials}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-bold text-[var(--text-heading)] truncate">{displayName}</div>
+                        <div className="text-xs text-[var(--text-muted)] truncate">{specialty}</div>
+                        <div className="mt-1 flex items-center gap-1.5 text-[11px] text-emerald-600 font-medium">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span>Session active</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Navigation Actions */}
+                    <div className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onNavigate("settings");
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-[var(--medical-blue)] rounded-xl transition-all cursor-pointer font-medium"
+                      >
+                        <Settings size={17} className="text-slate-500" />
+                        <span>Paramètres & Profil</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onNavigate("history");
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-[var(--medical-blue)] rounded-xl transition-all cursor-pointer font-medium"
+                      >
+                        <History size={17} className="text-slate-500" />
+                        <span>Historique & Transmissions</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onNavigate("patients");
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-[var(--medical-blue)] rounded-xl transition-all cursor-pointer font-medium"
+                      >
+                        <Users size={17} className="text-slate-500" />
+                        <span>Gestion des Patients</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onNavigate("offline");
+                          setShowProfileMenu(false);
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-slate-700 hover:bg-slate-100 hover:text-[var(--medical-blue)] rounded-xl transition-all cursor-pointer font-medium"
+                      >
+                        <WifiOff size={17} className="text-slate-500" />
+                        <span>Mode Hors-Ligne & Sync</span>
+                      </button>
+                    </div>
+
+                    {/* Logout Option */}
+                    <div className="pt-2 mt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowProfileMenu(false);
+                          if (onLogout) onLogout();
+                        }}
+                        className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-all cursor-pointer font-semibold"
+                      >
+                        <LogOut size={17} />
+                        <span>Se Déconnecter</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
         </header>
 
-        {/* Content */}
+        {/* Page Content */}
         <main className="flex-1 px-6 lg:px-10 py-8 lg:py-10">
           <div className="max-w-7xl mx-auto animate-fade-up" key={currentScreen}>
             {children}
           </div>
         </main>
 
+        {/* Footer */}
         <footer className="px-6 lg:px-10 pb-6 text-center">
           <p className="text-xs text-[var(--text-muted)]">
             © {new Date().getFullYear()} MedAssist — Système d'Aide à la Consultation IA · Conforme RGPD & HDS
