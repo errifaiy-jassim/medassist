@@ -10,18 +10,21 @@ import {
   FileText,
   History,
   LogOut,
+  Mic,
   Radio,
+  RefreshCw,
   Search,
   Settings,
   ShieldCheck,
   Stethoscope,
+  Trash2,
   User,
   Users,
   Wifi,
   WifiOff,
   X,
 } from "lucide-react";
-import { fetchDashboardStats, searchPatients } from "../services/api";
+import { fetchAllConsultations, searchPatients } from "../services/api";
 
 const NAV_ITEMS = [
   { key: "screen2", label: "Tableau de bord", icon: "dashboard" },
@@ -104,9 +107,24 @@ function Icon({ name, size = 20 }) {
   }
 }
 
+function formatRelativeTime(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  if (Number.isNaN(d.getTime())) return "";
+  const now = new Date();
+  const diffMinutes = Math.floor((now - d) / 60000);
+  if (diffMinutes < 1) return "À l'instant";
+  if (diffMinutes < 60) return `Il y a ${diffMinutes} min`;
+  const isToday = d.toDateString() === now.toDateString();
+  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  if (isToday) return time;
+  return `${d.toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })} ${time}`;
+}
+
 export default function Layout({
   currentScreen,
   onNavigate,
+  onOpenConsultation,
   children,
   doctorName,
   onLogout,
@@ -124,6 +142,7 @@ export default function Layout({
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [loadingNotifs, setLoadingNotifs] = useState(false);
 
   const notifRef = useRef(null);
   const profileRef = useRef(null);
@@ -160,78 +179,119 @@ export default function Layout({
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  // Load clinical notifications / activity
-  useEffect(() => {
-    const loadClinicalNotifications = async () => {
-      const notifs = [];
+  // Fetch real clinical notifications from backend consultations
+  const loadClinicalNotifications = async () => {
+    setLoadingNotifs(true);
+    const notifs = [];
 
-      if (isOffline) {
-        notifs.push({
-          id: "offline-alert",
-          title: "Mode Hors-Ligne Actif",
-          message: "Les modifications seront enregistrées localement et synchronisées lors du retour de la connexion.",
-          type: "warning",
-          time: "En cours",
-          actionScreen: "offline",
-        });
-      }
+    if (isOffline) {
+      notifs.push({
+        id: "offline-alert",
+        title: "Mode Hors-Ligne Actif",
+        message: "Enregistrement local activé. Les données seront synchronisées au rétablissement du réseau.",
+        type: "warning",
+        time: "En cours",
+        actionScreen: "offline",
+      });
+    }
 
-      if (!databaseConnected && !isOffline) {
-        notifs.push({
-          id: "db-alert",
-          title: "Base de données inaccessible",
-          message: "Vérifiez la connexion au serveur MedAssist.",
-          type: "danger",
-          time: "Urgent",
-          actionScreen: "settings",
-        });
-      }
+    if (!databaseConnected && !isOffline) {
+      notifs.push({
+        id: "db-alert",
+        title: "Base de données inaccessible",
+        message: "Impossible de joindre le serveur MedAssist.",
+        type: "danger",
+        time: "Urgent",
+        actionScreen: "settings",
+      });
+    }
 
-      try {
-        if (!isOffline) {
-          const stats = await fetchDashboardStats();
-          if (stats?.pending_dictations > 0) {
+    try {
+      if (!isOffline) {
+        const rawConsultations = await fetchAllConsultations();
+        const consultations = Array.isArray(rawConsultations) ? rawConsultations : [];
+
+        // Parse real consultations into actionable notifications
+        consultations.slice(0, 8).forEach((c) => {
+          const patientName = c.patient_name || "Patient";
+          const time = formatRelativeTime(c.created_at || c.updated_at);
+
+          if (["transcribed", "analyzed", "coded"].includes(c.status) && c.validation_status !== "validated") {
             notifs.push({
-              id: "pending-dictations",
-              title: `${stats.pending_dictations} consultation(s) en attente`,
-              message: "Certaines dictées attendent validation médicale.",
+              id: `notif-${c.id}`,
+              consultationId: c.id,
+              title: patientName,
+              message: "Consultation codée en attente de validation médicale.",
+              type: "warning",
+              statusBadge: "À valider",
+              time,
+            });
+          } else if (["draft", "transcribing"].includes(c.status)) {
+            notifs.push({
+              id: `notif-${c.id}`,
+              consultationId: c.id,
+              title: patientName,
+              message: "Dictée vocale en cours d'enregistrement.",
               type: "info",
-              time: "Aujourd'hui",
-              actionScreen: "history",
+              statusBadge: "En cours",
+              time,
+            });
+          } else if (c.transmission_status === "sent" || c.status === "transmitted") {
+            notifs.push({
+              id: `notif-${c.id}`,
+              consultationId: c.id,
+              title: patientName,
+              message: `Consultation validée et transmise au SIH ${c.transmission_id ? `(#${c.transmission_id.slice(0, 8)})` : ""}`,
+              type: "success",
+              statusBadge: "Transmise",
+              time,
+            });
+          } else if (c.validation_status === "validated" || c.status === "validated") {
+            notifs.push({
+              id: `notif-${c.id}`,
+              consultationId: c.id,
+              title: patientName,
+              message: "Consultation validée médicalement. Prête pour envoi SIH.",
+              type: "success",
+              statusBadge: "Validée",
+              time,
+            });
+          } else if (c.status === "failed" || c.transmission_status === "failed") {
+            notifs.push({
+              id: `notif-${c.id}`,
+              consultationId: c.id,
+              title: patientName,
+              message: "Échec de transmission SIH. Cliquez pour vérifier.",
+              type: "danger",
+              statusBadge: "Échec",
+              time,
             });
           }
-          if (Array.isArray(stats?.recent_activity)) {
-            stats.recent_activity.slice(0, 3).forEach((act, idx) => {
-              notifs.push({
-                id: `act-${idx}`,
-                title: act.patient || "Consultation",
-                message: `${act.action || "Mise à jour"} ${act.code ? `(${act.code})` : ""}`,
-                type: act.status === "green" ? "success" : act.status === "blue" ? "info" : "warning",
-                time: act.time ? new Date(act.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Récemment",
-                actionScreen: "history",
-              });
-            });
-          }
-        }
-      } catch (err) {
-        console.warn("Could not fetch notifications:", err);
-      }
-
-      if (notifs.length === 0) {
-        notifs.push({
-          id: "system-ready",
-          title: "Système MedAssist opérationnel",
-          message: "Tous les services IA et codification CIM-10 sont connectés.",
-          type: "success",
-          time: "Prêt",
-          actionScreen: "screen2",
         });
       }
+    } catch (err) {
+      console.warn("Could not load consultations for notifications:", err);
+    } finally {
+      setLoadingNotifs(false);
+    }
 
-      setNotifications(notifs);
-      setUnreadCount(notifs.filter((n) => n.type === "warning" || n.type === "danger" || n.id === "pending-dictations").length || notifs.length);
-    };
+    if (notifs.length === 0) {
+      notifs.push({
+        id: "system-ready",
+        title: "Système MedAssist",
+        message: "Tous les services IA, transcription et codification sont prêts.",
+        type: "success",
+        time: "Prêt",
+        actionScreen: "screen2",
+      });
+    }
 
+    setNotifications(notifs);
+    const unread = notifs.filter((n) => n.type === "warning" || n.type === "danger").length || (notifs.length > 1 ? notifs.length : 0);
+    setUnreadCount(unread);
+  };
+
+  useEffect(() => {
     loadClinicalNotifications();
   }, [isOffline, databaseConnected]);
 
@@ -257,9 +317,15 @@ export default function Layout({
     }
   };
 
-  const handleNotificationClick = (screen) => {
+  const handleNotificationClick = (notif) => {
     setShowNotifications(false);
-    if (screen) onNavigate(screen);
+    if (notif.consultationId && onOpenConsultation) {
+      onOpenConsultation(notif.consultationId);
+    } else if (notif.actionScreen && onNavigate) {
+      onNavigate(notif.actionScreen);
+    } else if (onNavigate) {
+      onNavigate("history");
+    }
   };
 
   return (
@@ -368,7 +434,7 @@ export default function Layout({
 
             <div className="flex-1 md:hidden" />
 
-            {/* Right Icons (Connection Badge, Bell, Profile Circle) */}
+            {/* Right Icons */}
             <div className="flex items-center gap-4">
               {/* Online / Offline Status Badge */}
               <span className={`hidden sm:inline-flex lux-badge ${isOffline || !databaseConnected ? "badge-amber" : "badge-green"}`}>
@@ -383,6 +449,7 @@ export default function Layout({
                   onClick={() => {
                     setShowNotifications(!showNotifications);
                     setShowProfileMenu(false);
+                    if (!showNotifications) loadClinicalNotifications();
                   }}
                   className={`relative p-2.5 rounded-xl transition-all duration-200 cursor-pointer ${
                     showNotifications
@@ -411,39 +478,67 @@ export default function Layout({
                           <span className="lux-badge badge-blue text-[10px] py-0.5 px-2 font-bold">{unreadCount}</span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setUnreadCount(0)}
-                        className="text-xs text-[var(--medical-blue)] hover:underline font-medium cursor-pointer"
-                      >
-                        Tout marquer lu
-                      </button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={loadClinicalNotifications}
+                          className="p-1 text-slate-400 hover:text-slate-700 rounded-md hover:bg-slate-100"
+                          title="Actualiser les notifications"
+                        >
+                          <RefreshCw size={13} className={loadingNotifs ? "animate-spin" : ""} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setUnreadCount(0)}
+                          className="text-xs text-[var(--medical-blue)] hover:underline font-medium cursor-pointer"
+                        >
+                          Tout marquer lu
+                        </button>
+                      </div>
                     </div>
 
                     <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
                       {notifications.map((notif) => (
                         <div
                           key={notif.id}
-                          onClick={() => handleNotificationClick(notif.actionScreen)}
-                          className="p-3 bg-[var(--bg-app)] hover:bg-blue-50/70 border border-transparent hover:border-blue-200 rounded-xl transition-all cursor-pointer flex items-start gap-3"
+                          onClick={() => handleNotificationClick(notif)}
+                          className="p-3 bg-[var(--bg-app)] hover:bg-blue-50/80 border border-transparent hover:border-blue-200 rounded-xl transition-all cursor-pointer flex items-start gap-3 group"
                         >
                           <div className="mt-0.5 shrink-0">
                             {notif.type === "danger" ? (
                               <AlertCircle size={17} className="text-red-500" />
                             ) : notif.type === "warning" ? (
-                              <WifiOff size={17} className="text-amber-500" />
+                              <Activity size={17} className="text-amber-500" />
                             ) : notif.type === "info" ? (
-                              <Activity size={17} className="text-[var(--medical-blue)]" />
+                              <Mic size={17} className="text-[var(--medical-blue)]" />
                             ) : (
                               <CheckCircle2 size={17} className="text-emerald-600" />
                             )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <span className="text-xs font-bold text-[var(--text-heading)] truncate">{notif.title}</span>
+                              <div className="flex items-center gap-1.5 truncate">
+                                <span className="text-xs font-bold text-[var(--text-heading)] group-hover:text-[var(--medical-blue)] transition-colors">
+                                  {notif.title}
+                                </span>
+                                {notif.statusBadge && (
+                                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-semibold ${
+                                    notif.type === "warning"
+                                      ? "bg-amber-100 text-amber-800"
+                                      : notif.type === "success"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : "bg-blue-100 text-blue-800"
+                                  }`}>
+                                    {notif.statusBadge}
+                                  </span>
+                                )}
+                              </div>
                               <span className="text-[10px] text-slate-400 shrink-0">{notif.time}</span>
                             </div>
                             <p className="text-xs text-[var(--text-body)] mt-0.5 leading-relaxed">{notif.message}</p>
+                            <span className="text-[10px] text-[var(--medical-blue)] font-medium inline-flex items-center gap-0.5 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                              Ouvrir la consultation <ChevronRight size={11} />
+                            </span>
                           </div>
                         </div>
                       ))}
@@ -453,7 +548,10 @@ export default function Layout({
                       <span className="text-slate-400">Système MedAssist HDS</span>
                       <button
                         type="button"
-                        onClick={() => handleNotificationClick("history")}
+                        onClick={() => {
+                          setShowNotifications(false);
+                          onNavigate("history");
+                        }}
                         className="text-[var(--medical-blue)] font-semibold hover:underline inline-flex items-center gap-1 cursor-pointer"
                       >
                         Historique complet <ChevronRight size={13} />

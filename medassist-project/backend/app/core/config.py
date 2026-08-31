@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
     # External AI (backend-only — never expose URL/keys to the frontend)
     LLM_API_URL: str = "http://127.0.0.1:11434/api/generate"
-    LLM_MODEL_NAME: str = "qwen2.5:7b"
+    LLM_MODEL_NAME: str = "qwen2.5:1.5b"
     LLM_ALLOWED_HOSTS: str = "127.0.0.1,localhost"
 
     # STT (backend-only)

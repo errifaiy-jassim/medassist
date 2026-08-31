@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api/v1";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 /**
  * Auth session storage.
  * JWT in localStorage is XSS-sensitive; keep tokens short-lived (server TTL)
@@ -111,11 +111,13 @@ export async function apiRequest(path, options = {}) {
   }
 
   const finalHeaders = auth ? authHeaders(headers) : { ...headers };
+  finalHeaders["ngrok-skip-browser-warning"] = "true";
   let requestBody = body;
   if (body && !(body instanceof FormData) && typeof body === "object") {
     finalHeaders["Content-Type"] = finalHeaders["Content-Type"] || "application/json";
     requestBody = JSON.stringify(body);
   }
+
 
   let response;
   try {
